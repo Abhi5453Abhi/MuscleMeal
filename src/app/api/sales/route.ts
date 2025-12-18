@@ -21,11 +21,27 @@ export async function GET(request: NextRequest) {
         SUM(CASE WHEN payment_mode = 'upi' THEN 1 ELSE 0 END) as upi_orders
       FROM orders 
       WHERE created_at BETWEEN ? AND ?
-    `).get(start, end);
+    `).get(start, end) as {
+            total_orders: number;
+            total_sales: number;
+            cash_sales: number;
+            upi_sales: number;
+            cash_orders: number;
+            upi_orders: number;
+        } | undefined;
+
+        const defaultSummary = {
+            total_orders: 0,
+            total_sales: 0,
+            cash_sales: 0,
+            upi_sales: 0,
+            cash_orders: 0,
+            upi_orders: 0
+        };
 
         return NextResponse.json({
             date,
-            ...summary
+            ...(summary || defaultSummary)
         });
     } catch (error) {
         console.error('Error fetching sales:', error);
