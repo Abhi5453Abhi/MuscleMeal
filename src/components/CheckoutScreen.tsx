@@ -73,8 +73,23 @@ export default function CheckoutScreen({
 
     if (completedOrder) {
         return (
-            <div className="container" style={{ maxWidth: '600px' }}>
-                <div className="card">
+            <div style={{ 
+                maxWidth: '600px', 
+                margin: '0 auto',
+                padding: 'var(--spacing-md)',
+                paddingBottom: 'var(--spacing-xl)',
+                minHeight: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                boxSizing: 'border-box'
+            }}>
+                <div className="card" style={{ 
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    marginBottom: 'var(--spacing-lg)',
+                    overflow: 'visible'
+                }}>
                     <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-xl)' }}>
                         <div style={{ fontSize: '3rem', marginBottom: 'var(--spacing-md)' }}>✅</div>
                         <h1 style={{ color: 'var(--success)', marginBottom: 'var(--spacing-sm)' }}>
@@ -191,7 +206,13 @@ export default function CheckoutScreen({
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+                    <div style={{ 
+                        display: 'flex', 
+                        gap: 'var(--spacing-md)',
+                        marginTop: 'auto',
+                        paddingTop: 'var(--spacing-lg)',
+                        flexShrink: 0
+                    }}>
                         <button
                             className="btn btn-primary btn-lg"
                             style={{ flex: 1 }}
@@ -201,6 +222,7 @@ export default function CheckoutScreen({
                         </button>
                         <button
                             className="btn btn-secondary btn-lg"
+                            style={{ flex: 1 }}
                             onClick={onComplete}
                         >
                             New Order
