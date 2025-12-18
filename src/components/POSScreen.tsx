@@ -81,17 +81,44 @@ export default function POSScreen({ userId }: POSScreenProps) {
                 fetch('/api/products?enabledOnly=true')
             ]);
 
-            const categoriesData = await categoriesRes.json();
-            const productsData = await productsRes.json();
+            if (!categoriesRes.ok) {
+                const errorText = await categoriesRes.text();
+                console.error('Categories API error:', categoriesRes.status, errorText);
+                setCategories([]);
+            } else {
+                const categoriesData = await categoriesRes.json();
+                console.log('Categories loaded:', categoriesData?.length || 0, 'categories');
+                if (Array.isArray(categoriesData)) {
+                    setCategories(categoriesData);
+                    if (categoriesData.length > 0) {
+                        setSelectedCategory(categoriesData[0].id);
+                    } else {
+                        // If no categories, set selectedCategory to null to show all products
+                        setSelectedCategory(null);
+                    }
+                } else {
+                    console.error('Categories data is not an array:', categoriesData);
+                    setCategories([]);
+                    setSelectedCategory(null);
+                }
+            }
 
-            setCategories(categoriesData);
-            setProducts(productsData);
-
-            if (categoriesData.length > 0) {
-                setSelectedCategory(categoriesData[0].id);
+            if (!productsRes.ok) {
+                console.error('Products API error:', productsRes.status, await productsRes.text());
+                setProducts([]);
+            } else {
+                const productsData = await productsRes.json();
+                if (Array.isArray(productsData)) {
+                    setProducts(productsData);
+                } else {
+                    console.error('Products data is not an array:', productsData);
+                    setProducts([]);
+                }
             }
         } catch (error) {
             console.error('Error loading data:', error);
+            setCategories([]);
+            setProducts([]);
         } finally {
             setLoading(false);
         }
@@ -419,17 +446,31 @@ export default function POSScreen({ userId }: POSScreenProps) {
                     width: '100%'
                 }}>
                     {/* Category Tabs */}
-                    <div className="category-tabs" style={{ flexShrink: 0 }}>
-                        {categories.map(category => (
-                            <button
-                                key={category.id}
-                                className={`category-tab ${selectedCategory === category.id ? 'active' : ''}`}
-                                onClick={() => setSelectedCategory(category.id)}
-                            >
-                                {category.name}
-                            </button>
-                        ))}
-                    </div>
+                    {categories.length > 0 && (
+                        <div className="category-tabs" style={{ flexShrink: 0 }}>
+                            {categories.map(category => (
+                                <button
+                                    key={category.id}
+                                    className={`category-tab ${selectedCategory === category.id ? 'active' : ''}`}
+                                    onClick={() => setSelectedCategory(category.id)}
+                                >
+                                    {category.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    {categories.length === 0 && !loading && (
+                        <div style={{ 
+                            padding: 'var(--spacing-md)', 
+                            background: 'var(--warning)', 
+                            color: 'white', 
+                            borderRadius: 'var(--radius-md)',
+                            marginBottom: 'var(--spacing-md)',
+                            textAlign: 'center'
+                        }}>
+                            No categories found. Please seed the database or check your Supabase connection.
+                        </div>
+                    )}
 
                     {/* Products Grid - Scrollable */}
                     <div style={{ flex: 1, overflowY: 'auto', paddingRight: 'var(--spacing-sm)' }}>
