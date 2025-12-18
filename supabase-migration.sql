@@ -1,24 +1,6 @@
-// Supabase database client
-import { createClient } from '@supabase/supabase-js';
+-- Supabase Migration Script for MuscleMeal POS
+-- Run this in your Supabase SQL Editor
 
-const supabaseUrl = process.env.NEXT_PUBLIC_MUSCLE_MEAL_DBSUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_MUSCLE_MEAL_DBSUPABASE_ANON_KEY || 
-                     process.env.NEXT_PUBLIC_MUSCLE_MEAL_DBSUPABASE_PUBLISHABLE_KEY;
-
-// Create client with fallback values for build time
-// These will be replaced at runtime with actual values from environment
-export const supabase = createClient(
-    supabaseUrl || 'https://placeholder.supabase.co',
-    supabaseKey || 'placeholder-key'
-);
-
-// Validate environment variables at runtime (not during build)
-if (typeof window === 'undefined' && (!supabaseUrl || !supabaseKey)) {
-    console.warn('Warning: Missing Supabase environment variables. Please set NEXT_PUBLIC_MUSCLE_MEAL_DBSUPABASE_URL and NEXT_PUBLIC_MUSCLE_MEAL_DBSUPABASE_ANON_KEY (or NEXT_PUBLIC_MUSCLE_MEAL_DBSUPABASE_PUBLISHABLE_KEY)');
-}
-
-// Database initialization SQL (run this in Supabase SQL editor)
-export const initDatabaseSQL = `
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   id BIGSERIAL PRIMARY KEY,
@@ -73,6 +55,18 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_orders_bill_number ON orders(bill_number);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
-`;
 
-export default supabase;
+-- Enable Row Level Security (RLS) - Optional, adjust based on your needs
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+
+-- Create policies to allow all operations (adjust based on your security needs)
+-- For now, we'll allow all operations. You can restrict this later.
+CREATE POLICY "Allow all operations on users" ON users FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all operations on categories" ON categories FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all operations on products" ON products FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all operations on orders" ON orders FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all operations on order_items" ON order_items FOR ALL USING (true) WITH CHECK (true);

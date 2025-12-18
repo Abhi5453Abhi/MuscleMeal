@@ -1,6 +1,6 @@
 // Get specific order details
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { supabase } from '@/lib/db';
 import { Order, OrderWithItems, OrderItem } from '@/types';
 
 export async function GET(
@@ -10,17 +10,29 @@ export async function GET(
     try {
         const orderId = parseInt(params.id);
 
-        const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as Order;
+        const { data: order, error: orderError } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
 
-        if (!order) {
+        if (orderError || !order) {
             return NextResponse.json({ error: 'Order not found' }, { status: 404 });
         }
 
-        const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId) as OrderItem[];
+        const { data: items, error: itemsError } = await supabase
+            .from('order_items')
+            .select('*')
+            .eq('order_id', orderId);
+
+        if (itemsError) {
+            console.error('Error fetching order items:', itemsError);
+            return NextResponse.json({ error: 'Failed to fetch order items' }, { status: 500 });
+        }
 
         const orderWithItems: OrderWithItems = {
             ...order,
-            items
+            items: (items || []) as OrderItem[]
         };
 
         return NextResponse.json(orderWithItems);

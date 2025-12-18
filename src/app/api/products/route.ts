@@ -1,6 +1,6 @@
 // Products API - CRUD operations
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { supabase } from '@/lib/db';
 import { Product } from '@/types';
 
 // GET - Fetch all products or filter by category
@@ -10,27 +10,53 @@ export async function GET(request: NextRequest) {
         const categoryId = searchParams.get('categoryId');
         const enabledOnly = searchParams.get('enabledOnly') === 'true';
 
-        let query = `
-      SELECT p.*, c.name as category_name 
-      FROM products p 
-      JOIN categories c ON p.category_id = c.id
-      WHERE 1=1
-    `;
-        const params: any[] = [];
+        let query = supabase
+            .from('products')
+            .select(`
+                *,
+                categories (
+                    name,
+                    display_order
+                )
+            `);
 
         if (categoryId) {
-            query += ' AND p.category_id = ?';
-            params.push(parseInt(categoryId));
+            query = query.eq('category_id', parseInt(categoryId));
         }
 
         if (enabledOnly) {
-            query += ' AND p.enabled = 1';
+            query = query.eq('enabled', true);
         }
 
-        query += ' ORDER BY c.display_order, p.name';
+        const { data: products, error } = await query;
 
-        const products = db.prepare(query).all(...params) as Product[];
-        return NextResponse.json(products);
+        if (error) {
+            console.error('Error fetching products:', error);
+            return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+        }
+
+        // Transform the data to match the expected format
+        let formattedProducts: Product[] = products?.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            category_id: p.category_id,
+            category_name: p.categories?.name,
+            price: parseFloat(p.price),
+            enabled: p.enabled,
+            created_at: p.created_at
+        })) || [];
+
+        // Sort by category display_order, then by product name
+        formattedProducts.sort((a, b) => {
+            const aOrder = (products?.find((p: any) => p.id === a.id)?.categories?.display_order || 0);
+            const bOrder = (products?.find((p: any) => p.id === b.id)?.categories?.display_order || 0);
+            if (aOrder !== bOrder) {
+                return aOrder - bOrder;
+            }
+            return a.name.localeCompare(b.name);
+        });
+
+        return NextResponse.json(formattedProducts);
     } catch (error) {
         console.error('Error fetching products:', error);
         return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
@@ -47,15 +73,38 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const result = db.prepare(
-            'INSERT INTO products (name, category_id, price, enabled) VALUES (?, ?, ?, 1)'
-        ).run(name, category_id, price);
+        const { data: product, error } = await supabase
+            .from('products')
+            .insert({
+                name,
+                category_id: parseInt(category_id),
+                price: parseFloat(price),
+                enabled: true
+            })
+            .select(`
+                *,
+                categories (
+                    name
+                )
+            `)
+            .single();
 
-        const product = db.prepare(
-            'SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.id = ?'
-        ).get(result.lastInsertRowid) as Product;
+        if (error) {
+            console.error('Error creating product:', error);
+            return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
+        }
 
-        return NextResponse.json(product, { status: 201 });
+        const formattedProduct: Product = {
+            id: product.id,
+            name: product.name,
+            category_id: product.category_id,
+            category_name: product.categories?.name,
+            price: parseFloat(product.price),
+            enabled: product.enabled,
+            created_at: product.created_at
+        };
+
+        return NextResponse.json(formattedProduct, { status: 201 });
     } catch (error) {
         console.error('Error creating product:', error);
         return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
@@ -72,38 +121,44 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
         }
 
-        const updates: string[] = [];
-        const params: any[] = [];
+        const updates: any = {};
+        if (name !== undefined) updates.name = name;
+        if (category_id !== undefined) updates.category_id = parseInt(category_id);
+        if (price !== undefined) updates.price = parseFloat(price);
+        if (enabled !== undefined) updates.enabled = enabled;
 
-        if (name !== undefined) {
-            updates.push('name = ?');
-            params.push(name);
-        }
-        if (category_id !== undefined) {
-            updates.push('category_id = ?');
-            params.push(category_id);
-        }
-        if (price !== undefined) {
-            updates.push('price = ?');
-            params.push(price);
-        }
-        if (enabled !== undefined) {
-            updates.push('enabled = ?');
-            params.push(enabled ? 1 : 0);
-        }
-
-        if (updates.length === 0) {
+        if (Object.keys(updates).length === 0) {
             return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
         }
 
-        params.push(id);
-        db.prepare(`UPDATE products SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+        const { data: product, error } = await supabase
+            .from('products')
+            .update(updates)
+            .eq('id', parseInt(id))
+            .select(`
+                *,
+                categories (
+                    name
+                )
+            `)
+            .single();
 
-        const product = db.prepare(
-            'SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.id = ?'
-        ).get(id) as Product;
+        if (error) {
+            console.error('Error updating product:', error);
+            return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
+        }
 
-        return NextResponse.json(product);
+        const formattedProduct: Product = {
+            id: product.id,
+            name: product.name,
+            category_id: product.category_id,
+            category_name: product.categories?.name,
+            price: parseFloat(product.price),
+            enabled: product.enabled,
+            created_at: product.created_at
+        };
+
+        return NextResponse.json(formattedProduct);
     } catch (error) {
         console.error('Error updating product:', error);
         return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
@@ -120,7 +175,16 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
         }
 
-        db.prepare('DELETE FROM products WHERE id = ?').run(parseInt(id));
+        const { error } = await supabase
+            .from('products')
+            .delete()
+            .eq('id', parseInt(id));
+
+        if (error) {
+            console.error('Error deleting product:', error);
+            return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
+        }
+
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error deleting product:', error);

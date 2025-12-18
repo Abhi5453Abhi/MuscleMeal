@@ -1,6 +1,6 @@
 // Orders API - Create and fetch orders
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { supabase } from '@/lib/db';
 import { Order, OrderWithItems, OrderItem } from '@/types';
 import { generateBillNumber, getDayBounds } from '@/lib/utils';
 
@@ -10,19 +10,24 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const date = searchParams.get('date');
 
-        let query = 'SELECT * FROM orders';
-        const params: any[] = [];
+        let query = supabase
+            .from('orders')
+            .select('*')
+            .order('created_at', { ascending: false });
 
         if (date) {
             const { start, end } = getDayBounds(date);
-            query += ' WHERE created_at BETWEEN ? AND ?';
-            params.push(start, end);
+            query = query.gte('created_at', start).lte('created_at', end);
         }
 
-        query += ' ORDER BY created_at DESC';
+        const { data: orders, error } = await query;
 
-        const orders = db.prepare(query).all(...params) as Order[];
-        return NextResponse.json(orders);
+        if (error) {
+            console.error('Error fetching orders:', error);
+            return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
+        }
+
+        return NextResponse.json(orders as Order[]);
     } catch (error) {
         console.error('Error fetching orders:', error);
         return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
@@ -47,37 +52,60 @@ export async function POST(request: NextRequest) {
         // Get today's order count for bill number generation
         const today = new Date().toISOString().split('T')[0];
         const { start, end } = getDayBounds(today);
-        const orderCount = db.prepare(
-            'SELECT COUNT(*) as count FROM orders WHERE created_at BETWEEN ? AND ?'
-        ).get(start, end) as { count: number };
+        
+        const { count } = await supabase
+            .from('orders')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', start)
+            .lte('created_at', end);
 
-        const billNumber = generateBillNumber(orderCount.count);
+        const billNumber = generateBillNumber(count || 0);
 
         // Insert order
-        const orderResult = db.prepare(`
-      INSERT INTO orders (bill_number, order_type, payment_mode, total_amount, notes, created_by)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(billNumber, order_type, payment_mode, total, notes || null, created_by);
+        const { data: order, error: orderError } = await supabase
+            .from('orders')
+            .insert({
+                bill_number: billNumber,
+                order_type,
+                payment_mode,
+                total_amount: total,
+                notes: notes || null,
+                created_by: parseInt(created_by)
+            })
+            .select()
+            .single();
 
-        const orderId = orderResult.lastInsertRowid;
-
-        // Insert order items
-        const insertItem = db.prepare(`
-      INSERT INTO order_items (order_id, product_id, product_name, quantity, price_at_time)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-
-        for (const item of items) {
-            insertItem.run(orderId, item.product_id, item.product_name, item.quantity, item.price);
+        if (orderError || !order) {
+            console.error('Error creating order:', orderError);
+            return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
         }
 
-        // Fetch the complete order with items
-        const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as Order;
-        const orderItems = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId) as OrderItem[];
+        const orderId = order.id;
+
+        // Insert order items
+        const orderItems = items.map((item: any) => ({
+            order_id: orderId,
+            product_id: item.product_id,
+            product_name: item.product_name,
+            quantity: item.quantity,
+            price_at_time: item.price
+        }));
+
+        const { data: insertedItems, error: itemsError } = await supabase
+            .from('order_items')
+            .insert(orderItems)
+            .select();
+
+        if (itemsError) {
+            console.error('Error creating order items:', itemsError);
+            // Rollback order if items fail
+            await supabase.from('orders').delete().eq('id', orderId);
+            return NextResponse.json({ error: 'Failed to create order items' }, { status: 500 });
+        }
 
         const orderWithItems: OrderWithItems = {
             ...order,
-            items: orderItems
+            items: insertedItems as OrderItem[]
         };
 
         return NextResponse.json(orderWithItems, { status: 201 });

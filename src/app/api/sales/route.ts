@@ -1,6 +1,6 @@
 // Sales analytics API
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { supabase } from '@/lib/db';
 import { getDayBounds, getTodayDate } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
@@ -10,38 +10,33 @@ export async function GET(request: NextRequest) {
 
         const { start, end } = getDayBounds(date);
 
-        // Get daily sales summary
-        const summary = db.prepare(`
-      SELECT 
-        COUNT(*) as total_orders,
-        COALESCE(SUM(total_amount), 0) as total_sales,
-        COALESCE(SUM(CASE WHEN payment_mode = 'cash' THEN total_amount ELSE 0 END), 0) as cash_sales,
-        COALESCE(SUM(CASE WHEN payment_mode = 'upi' THEN total_amount ELSE 0 END), 0) as upi_sales,
-        SUM(CASE WHEN payment_mode = 'cash' THEN 1 ELSE 0 END) as cash_orders,
-        SUM(CASE WHEN payment_mode = 'upi' THEN 1 ELSE 0 END) as upi_orders
-      FROM orders 
-      WHERE created_at BETWEEN ? AND ?
-    `).get(start, end) as {
-            total_orders: number;
-            total_sales: number;
-            cash_sales: number;
-            upi_sales: number;
-            cash_orders: number;
-            upi_orders: number;
-        } | undefined;
+        // Get all orders for the date
+        const { data: orders, error } = await supabase
+            .from('orders')
+            .select('payment_mode, total_amount')
+            .gte('created_at', start)
+            .lte('created_at', end);
 
-        const defaultSummary = {
-            total_orders: 0,
-            total_sales: 0,
-            cash_sales: 0,
-            upi_sales: 0,
-            cash_orders: 0,
-            upi_orders: 0
+        if (error) {
+            console.error('Error fetching sales:', error);
+            return NextResponse.json({ error: 'Failed to fetch sales' }, { status: 500 });
+        }
+
+        // Calculate summary
+        const summary = {
+            total_orders: orders?.length || 0,
+            total_sales: orders?.reduce((sum, order) => sum + parseFloat(order.total_amount.toString()), 0) || 0,
+            cash_sales: orders?.filter(o => o.payment_mode === 'cash')
+                .reduce((sum, order) => sum + parseFloat(order.total_amount.toString()), 0) || 0,
+            upi_sales: orders?.filter(o => o.payment_mode === 'upi')
+                .reduce((sum, order) => sum + parseFloat(order.total_amount.toString()), 0) || 0,
+            cash_orders: orders?.filter(o => o.payment_mode === 'cash').length || 0,
+            upi_orders: orders?.filter(o => o.payment_mode === 'upi').length || 0
         };
 
         return NextResponse.json({
             date,
-            ...(summary || defaultSummary)
+            ...summary
         });
     } catch (error) {
         console.error('Error fetching sales:', error);

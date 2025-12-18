@@ -1,6 +1,6 @@
 // Authentication API - Login endpoint
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { supabase } from '@/lib/db';
 import { LoginRequest, LoginResponse } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -16,10 +16,14 @@ export async function POST(request: NextRequest) {
         }
 
         // Find user
-        const user = db.prepare('SELECT id, username, role FROM users WHERE username = ? AND pin = ?')
-            .get(username, pin);
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('id, username, role')
+            .eq('username', username)
+            .eq('pin', pin)
+            .single();
 
-        if (!user) {
+        if (error || !user) {
             return NextResponse.json(
                 { success: false, message: 'Invalid credentials' } as LoginResponse,
                 { status: 401 }

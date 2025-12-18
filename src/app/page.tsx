@@ -7,7 +7,6 @@ import POSScreen from '@/components/POSScreen';
 import OrderHistory from '@/components/OrderHistory';
 import ProductManagement from '@/components/ProductManagement';
 import SalesDashboard from '@/components/SalesDashboard';
-import seedDatabase from '@/lib/seed';
 
 interface User {
     id: number;
