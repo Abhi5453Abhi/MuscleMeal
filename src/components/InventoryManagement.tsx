@@ -284,7 +284,7 @@ export default function InventoryManagement() {
                             {(Array.isArray(history) ? history : []).map(item => (
                                 <tr key={item.id} style={{ borderBottom: '1px solid var(--gray-200)' }}>
                                     <td style={{ padding: 'var(--spacing-md)', color: 'var(--gray-700)' }}>
-                                        {new Date(item.created_at).toLocaleString()}
+                                        {new Date(item.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                     </td>
                                     <td style={{ padding: 'var(--spacing-md)', fontWeight: 500 }}>
                                         {(item as any).products?.name || `Product #${item.product_id}`}
@@ -349,7 +349,7 @@ export default function InventoryManagement() {
                             {(Array.isArray(notifications) ? notifications : []).map(notification => (
                                 <tr key={notification.id} style={{ borderBottom: '1px solid var(--gray-200)' }}>
                                     <td style={{ padding: 'var(--spacing-md)', color: 'var(--gray-700)' }}>
-                                        {new Date(notification.created_at).toLocaleString()}
+                                        {new Date(notification.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                     </td>
                                     <td style={{ padding: 'var(--spacing-md)', fontWeight: 500 }}>
                                         {notification.product_name}

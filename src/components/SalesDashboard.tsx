@@ -87,12 +87,13 @@ export default function SalesDashboard() {
 
     const formatChartDate = (dateStr: string) => {
         const date = new Date(dateStr);
+        const istOptions = { timeZone: 'Asia/Kolkata' };
         if (period === 'daily') {
-            return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+            return date.toLocaleDateString('en-IN', { ...istOptions, day: '2-digit', month: 'short' });
         } else if (period === 'weekly') {
-            return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+            return date.toLocaleDateString('en-IN', { ...istOptions, day: '2-digit', month: 'short' });
         } else {
-            return date.toLocaleDateString('en-IN', { month: 'short', day: '2-digit' });
+            return date.toLocaleDateString('en-IN', { ...istOptions, month: 'short', day: '2-digit' });
         }
     };
 

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { Order, OrderWithItems, OrderItem } from '@/types';
-import { generateBillNumber, getDayBounds, formatCurrency, getTodayDate } from '@/lib/utils';
+import { generateBillNumber, getDayBounds, formatCurrency, getTodayDate, getNowISTISO } from '@/lib/utils';
 import { broadcastNotification } from '@/lib/notifications';
 import { OrderNotification } from '@/types';
 
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
         const notification: OrderNotification = {
             type: 'order_completed',
             order: orderWithItems,
-            timestamp: new Date().toISOString(),
+            timestamp: getNowISTISO(),
             message: `New order completed: Bill #${billNumber} - ${formatCurrency(total)}`
         };
         

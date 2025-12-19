@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { InventoryNotification } from '@/types';
 import { broadcastNotification } from '@/lib/notifications';
+import { getNowISTISO } from '@/lib/utils';
 
 // GET - Get low stock notifications
 export async function GET(request: NextRequest) {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
             .update({
                 acknowledged: true,
                 acknowledged_by: acknowledged_by ? parseInt(acknowledged_by) : null,
-                acknowledged_at: new Date().toISOString()
+                acknowledged_at: getNowISTISO()
             })
             .eq('id', parseInt(notification_id))
             .select()
