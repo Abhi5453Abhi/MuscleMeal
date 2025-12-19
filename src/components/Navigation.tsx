@@ -12,7 +12,8 @@ export default function Navigation({ currentView, onViewChange, userRole, onLogo
         { id: 'pos', label: '🛒 POS', roles: ['admin', 'cashier'] },
         { id: 'history', label: '📋 Orders', roles: ['admin', 'cashier'] },
         { id: 'products', label: '📦 Products', roles: ['admin'] },
-        { id: 'sales', label: '📊 Sales', roles: ['admin'] },
+        { id: 'inventory', label: '📊 Inventory', roles: ['admin'] },
+        { id: 'sales', label: '💰 Sales', roles: ['admin'] },
     ];
 
     const visibleItems = menuItems.filter(item => item.roles.includes(userRole));

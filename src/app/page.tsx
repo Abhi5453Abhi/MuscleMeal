@@ -6,7 +6,9 @@ import Navigation from '@/components/Navigation';
 import POSScreen from '@/components/POSScreen';
 import OrderHistory from '@/components/OrderHistory';
 import ProductManagement from '@/components/ProductManagement';
+import InventoryManagement from '@/components/InventoryManagement';
 import SalesDashboard from '@/components/SalesDashboard';
+import NotificationSystem from '@/components/NotificationSystem';
 
 interface User {
     id: number;
@@ -86,9 +88,13 @@ export default function Home() {
                 onLogout={handleLogout}
             />
 
+            {/* Notification System - Shows real-time order notifications */}
+            <NotificationSystem />
+
             {currentView === 'pos' && <POSScreen userId={user.id} />}
             {currentView === 'history' && <OrderHistory />}
             {currentView === 'products' && user.role === 'admin' && <ProductManagement />}
+            {currentView === 'inventory' && user.role === 'admin' && <InventoryManagement />}
             {currentView === 'sales' && user.role === 'admin' && <SalesDashboard />}
         </div>
     );

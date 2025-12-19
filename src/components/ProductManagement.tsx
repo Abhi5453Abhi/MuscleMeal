@@ -11,12 +11,15 @@ export default function ProductManagement() {
     const [showModal, setShowModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Form state
     const [formData, setFormData] = useState({
         name: '',
         category_id: 0,
-        price: 0
+        price: 0,
+        stock_quantity: 0,
+        low_stock_threshold: 10
     });
 
     useEffect(() => {
@@ -52,7 +55,9 @@ export default function ProductManagement() {
         setFormData({
             name: '',
             category_id: categories[0]?.id || 0,
-            price: 0
+            price: 0,
+            stock_quantity: 0,
+            low_stock_threshold: 10
         });
         setShowModal(true);
     };
@@ -62,7 +67,9 @@ export default function ProductManagement() {
         setFormData({
             name: product.name,
             category_id: product.category_id,
-            price: product.price
+            price: product.price,
+            stock_quantity: product.stock_quantity ?? 0,
+            low_stock_threshold: product.low_stock_threshold ?? 10
         });
         setShowModal(true);
     };
@@ -133,9 +140,15 @@ export default function ProductManagement() {
         }
     };
 
-    const filteredProducts = selectedCategory
-        ? products.filter(p => p.category_id === selectedCategory)
-        : products;
+    const filteredProducts = products.filter(p => {
+        if (selectedCategory && p.category_id !== selectedCategory) return false;
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            return p.name.toLowerCase().includes(query) || 
+                   (p.category_name && p.category_name.toLowerCase().includes(query));
+        }
+        return true;
+    });
 
     if (loading) {
         return (
@@ -161,8 +174,61 @@ export default function ProductManagement() {
                 </button>
             </div>
 
+            {/* Search Bar */}
+            <div style={{ 
+                marginBottom: 'var(--spacing-lg)',
+                position: 'relative'
+            }}>
+                <input
+                    type="text"
+                    className="input"
+                    placeholder="🔍 Search products by name or category..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                        paddingLeft: '2.5rem',
+                        fontSize: '0.938rem'
+                    }}
+                />
+                <div style={{
+                    position: 'absolute',
+                    left: 'var(--spacing-md)',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--gray-500)',
+                    pointerEvents: 'none'
+                }}>
+                    🔍
+                </div>
+                {searchQuery && (
+                    <button
+                        onClick={() => setSearchQuery('')}
+                        style={{
+                            position: 'absolute',
+                            right: 'var(--spacing-md)',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--gray-500)',
+                            fontSize: '1.25rem',
+                            padding: 'var(--spacing-xs)'
+                        }}
+                    >
+                        ×
+                    </button>
+                )}
+            </div>
+
             {/* Category Tabs */}
             <div className="category-tabs">
+                <button
+                    className={`category-tab ${selectedCategory === null ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(null)}
+                >
+                    All
+                </button>
                 {categories.map(category => (
                     <button
                         key={category.id}
@@ -182,6 +248,7 @@ export default function ProductManagement() {
                             <th style={{ padding: 'var(--spacing-md)' }}>Product Name</th>
                             <th style={{ padding: 'var(--spacing-md)' }}>Category</th>
                             <th style={{ padding: 'var(--spacing-md)' }}>Price</th>
+                            <th style={{ padding: 'var(--spacing-md)' }}>Stock</th>
                             <th style={{ padding: 'var(--spacing-md)' }}>Status</th>
                             <th style={{ padding: 'var(--spacing-md)', textAlign: 'right' }}>Actions</th>
                         </tr>
@@ -199,9 +266,28 @@ export default function ProductManagement() {
                                     {formatCurrency(product.price)}
                                 </td>
                                 <td style={{ padding: 'var(--spacing-md)' }}>
-                                    <span className={`badge ${product.enabled ? 'badge-success' : 'badge-warning'}`}>
-                                        {product.enabled ? '✓ Active' : '✗ Disabled'}
-                                    </span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                        <span style={{ fontWeight: 600 }}>
+                                            {product.stock_quantity ?? 0}
+                                        </span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--gray-600)' }}>
+                                            Threshold: {product.low_stock_threshold ?? 10}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td style={{ padding: 'var(--spacing-md)' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                        <span className={`badge ${product.enabled ? 'badge-success' : 'badge-warning'}`}>
+                                            {product.enabled ? '✓ Active' : '✗ Disabled'}
+                                        </span>
+                                        {(product.stock_quantity ?? 0) <= (product.low_stock_threshold ?? 10) && (
+                                            <span className={`badge ${
+                                                (product.stock_quantity ?? 0) === 0 ? 'badge-error' : 'badge-warning'
+                                            }`} style={{ fontSize: '0.75rem' }}>
+                                                {(product.stock_quantity ?? 0) === 0 ? 'Out of Stock' : 'Low Stock'}
+                                            </span>
+                                        )}
+                                    </div>
                                 </td>
                                 <td style={{ padding: 'var(--spacing-md)', textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: 'var(--spacing-sm)', justifyContent: 'flex-end' }}>
@@ -237,7 +323,7 @@ export default function ProductManagement() {
                         padding: 'var(--spacing-xl)',
                         color: 'var(--gray-700)'
                     }}>
-                        No products in this category
+                        {searchQuery ? `No products found matching "${searchQuery}"` : 'No products in this category'}
                     </div>
                 )}
             </div>
@@ -283,7 +369,7 @@ export default function ProductManagement() {
                                 </select>
                             </div>
 
-                            <div style={{ marginBottom: 'var(--spacing-xl)' }}>
+                            <div style={{ marginBottom: 'var(--spacing-lg)' }}>
                                 <label style={{ display: 'block', marginBottom: 'var(--spacing-sm)', fontWeight: 500 }}>
                                     Price (₹)
                                 </label>
@@ -296,6 +382,34 @@ export default function ProductManagement() {
                                     min="0"
                                     step="1"
                                     placeholder="Enter price"
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: 'var(--spacing-lg)' }}>
+                                <label style={{ display: 'block', marginBottom: 'var(--spacing-sm)', fontWeight: 500 }}>
+                                    Initial Stock Quantity
+                                </label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={formData.stock_quantity}
+                                    onChange={(e) => setFormData({ ...formData, stock_quantity: parseInt(e.target.value) || 0 })}
+                                    min="0"
+                                    placeholder="Enter initial stock"
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: 'var(--spacing-xl)' }}>
+                                <label style={{ display: 'block', marginBottom: 'var(--spacing-sm)', fontWeight: 500 }}>
+                                    Low Stock Threshold
+                                </label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={formData.low_stock_threshold}
+                                    onChange={(e) => setFormData({ ...formData, low_stock_threshold: parseInt(e.target.value) || 10 })}
+                                    min="0"
+                                    placeholder="Alert when stock falls below this"
                                 />
                             </div>
 
