@@ -2,6 +2,10 @@
 import { NextRequest } from 'next/server';
 import { addConnection, removeConnection } from '@/lib/notifications';
 
+// Mark this route as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // GET - SSE endpoint for listening to notifications
 export async function GET(request: NextRequest) {
     console.log('[Notifications API] New SSE connection request');

@@ -2,6 +2,9 @@
 import { NextResponse } from 'next/server';
 import { getConnectionCount } from '@/lib/notifications';
 
+// Mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     const connectionCount = getConnectionCount();
     return NextResponse.json({
