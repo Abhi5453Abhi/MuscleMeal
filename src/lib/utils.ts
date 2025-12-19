@@ -5,9 +5,33 @@ const IST_TIMEZONE = 'Asia/Kolkata';
 
 /**
  * Get current date/time in IST
+ * Returns a Date object that represents the current IST moment
  */
 export function getNowIST(): Date {
-    return new Date(new Date().toLocaleString('en-US', { timeZone: IST_TIMEZONE }));
+    const now = new Date();
+    // Get IST time as a formatted string
+    const istString = now.toLocaleString('en-US', { 
+        timeZone: IST_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    
+    // Parse the IST string (format: "MM/DD/YYYY, HH:MM:SS")
+    const [datePart, timePart] = istString.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hour, minute, second] = timePart.split(':');
+    
+    // Create a date string in ISO format with IST offset
+    // Format: YYYY-MM-DDTHH:MM:SS+05:30
+    const istISOString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}+05:30`;
+    
+    // Create Date object from IST string (JavaScript will convert to UTC internally)
+    return new Date(istISOString);
 }
 
 /**
@@ -15,9 +39,25 @@ export function getNowIST(): Date {
  */
 export function toIST(date: string | Date): Date {
     const d = typeof date === 'string' ? new Date(date) : date;
-    // Get the date string in IST timezone
-    const istString = d.toLocaleString('en-US', { timeZone: IST_TIMEZONE });
-    return new Date(istString);
+    // Get IST time components
+    const istString = d.toLocaleString('en-US', { 
+        timeZone: IST_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    
+    const [datePart, timePart] = istString.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hour, minute, second] = timePart.split(':');
+    
+    const istISOString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}+05:30`;
+    
+    return new Date(istISOString);
 }
 
 /**

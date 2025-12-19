@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { Product } from '@/types';
+import { getNowISTISO } from '@/lib/utils';
 
 // GET - Fetch all products or filter by category
 export async function GET(request: NextRequest) {
@@ -113,7 +114,8 @@ export async function POST(request: NextRequest) {
                 quantity_change: stock_quantity,
                 previous_stock: 0,
                 new_stock: stock_quantity,
-                notes: 'Initial stock'
+                notes: 'Initial stock',
+                created_at: getNowISTISO()
             });
         }
 
@@ -176,7 +178,8 @@ export async function PUT(request: NextRequest) {
                     quantity_change: quantityChange,
                     previous_stock: currentStock,
                     new_stock: newStock,
-                    notes: 'Manual stock adjustment'
+                    notes: 'Manual stock adjustment',
+                    created_at: getNowISTISO()
                 });
             }
         }
