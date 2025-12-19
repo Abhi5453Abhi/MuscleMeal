@@ -9,15 +9,58 @@ export default function OrderHistory() {
     const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
     const [filterDate, setFilterDate] = useState(getTodayDate());
     const [loading, setLoading] = useState(true);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    
+    // Form filter states (for user input)
+    const [filters, setFilters] = useState({
+        startDate: getTodayDate(),
+        endDate: getTodayDate(),
+        orderType: '' as '' | 'dine-in' | 'takeaway',
+        paymentMode: '' as '' | 'cash' | 'upi',
+        minAmount: '',
+        maxAmount: '',
+        billNumber: '',
+        status: '' as '' | 'pending' | 'completed'
+    });
+
+    // Applied filter states (what's actually being used for API calls)
+    const [appliedFilters, setAppliedFilters] = useState({
+        startDate: getTodayDate(),
+        endDate: getTodayDate(),
+        orderType: '' as '' | 'dine-in' | 'takeaway',
+        paymentMode: '' as '' | 'cash' | 'upi',
+        minAmount: '',
+        maxAmount: '',
+        billNumber: '',
+        status: '' as '' | 'pending' | 'completed'
+    });
+    const [useAdvancedFilters, setUseAdvancedFilters] = useState(false);
 
     useEffect(() => {
         loadOrders();
-    }, [filterDate]);
+    }, [filterDate, appliedFilters, useAdvancedFilters]);
 
     const loadOrders = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`/api/orders?date=${filterDate}`);
+            const params = new URLSearchParams();
+            
+            // Use date range if advanced filters are applied, otherwise use single date
+            if (useAdvancedFilters) {
+                params.append('startDate', appliedFilters.startDate);
+                params.append('endDate', appliedFilters.endDate);
+            } else {
+                params.append('date', filterDate);
+            }
+            
+            if (appliedFilters.orderType) params.append('orderType', appliedFilters.orderType);
+            if (appliedFilters.paymentMode) params.append('paymentMode', appliedFilters.paymentMode);
+            if (appliedFilters.minAmount) params.append('minAmount', appliedFilters.minAmount);
+            if (appliedFilters.maxAmount) params.append('maxAmount', appliedFilters.maxAmount);
+            if (appliedFilters.billNumber) params.append('billNumber', appliedFilters.billNumber);
+            if (appliedFilters.status) params.append('status', appliedFilters.status);
+
+            const response = await fetch(`/api/orders?${params.toString()}`);
             const data = await response.json();
             setOrders(data);
         } catch (error) {
@@ -25,6 +68,30 @@ export default function OrderHistory() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const applyFilters = () => {
+        setAppliedFilters({ ...filters });
+        setUseAdvancedFilters(true);
+    };
+
+    const resetFilters = () => {
+        const today = getTodayDate();
+        setFilterDate(today);
+        const resetFilterState = {
+            startDate: today,
+            endDate: today,
+            orderType: '' as '' | 'dine-in' | 'takeaway',
+            paymentMode: '' as '' | 'cash' | 'upi',
+            minAmount: '',
+            maxAmount: '',
+            billNumber: '',
+            status: '' as '' | 'pending' | 'completed'
+        };
+        setFilters(resetFilterState);
+        setAppliedFilters(resetFilterState);
+        setUseAdvancedFilters(false);
+        setShowAdvancedFilters(false);
     };
 
     const loadOrderDetails = async (orderId: number) => {
@@ -50,27 +117,184 @@ export default function OrderHistory() {
     return (
         <div className="container">
             <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-                <h1 style={{ marginBottom: 'var(--spacing-md)' }}>Order History</h1>
-
-                {/* Date Filter */}
-                <div style={{ display: 'flex', gap: 'var(--spacing-md)', alignItems: 'center' }}>
-                    <input
-                        type="date"
-                        className="input"
-                        value={filterDate}
-                        onChange={(e) => setFilterDate(e.target.value)}
-                        style={{ maxWidth: '200px' }}
-                    />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-md)' }}>
+                    <h1 style={{ margin: 0 }}>Order History</h1>
                     <button
                         className="btn btn-secondary"
-                        onClick={() => setFilterDate(getTodayDate())}
+                        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                     >
-                        Today
+                        {showAdvancedFilters ? '▼' : '▶'} Advanced Filters
                     </button>
-                    <div style={{ marginLeft: 'auto', color: 'var(--gray-700)' }}>
-                        <strong>{orders.length}</strong> orders found
-                    </div>
                 </div>
+
+                {/* Basic Date Filter */}
+                {!showAdvancedFilters && (
+                    <div style={{ display: 'flex', gap: 'var(--spacing-md)', alignItems: 'center', marginBottom: 'var(--spacing-md)' }}>
+                        <input
+                            type="date"
+                            className="input"
+                            value={filterDate}
+                            onChange={(e) => {
+                                setFilterDate(e.target.value);
+                                setUseAdvancedFilters(false);
+                            }}
+                            style={{ maxWidth: '200px' }}
+                        />
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => {
+                                const today = getTodayDate();
+                                setFilterDate(today);
+                                setUseAdvancedFilters(false);
+                            }}
+                        >
+                            Today
+                        </button>
+                        <div style={{ marginLeft: 'auto', color: 'var(--gray-700)' }}>
+                            <strong>{orders.length}</strong> orders found
+                        </div>
+                    </div>
+                )}
+
+                {/* Advanced Filters */}
+                {showAdvancedFilters && (
+                    <div className="card" style={{ marginBottom: 'var(--spacing-md)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)' }}>
+                            {/* Date Range */}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', fontWeight: 500 }}>
+                                    Start Date
+                                </label>
+                                <input
+                                    type="date"
+                                    className="input"
+                                    value={filters.startDate}
+                                    onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', fontWeight: 500 }}>
+                                    End Date
+                                </label>
+                                <input
+                                    type="date"
+                                    className="input"
+                                    value={filters.endDate}
+                                    onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                                />
+                            </div>
+
+                            {/* Order Type */}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', fontWeight: 500 }}>
+                                    Order Type
+                                </label>
+                                <select
+                                    className="input"
+                                    value={filters.orderType}
+                                    onChange={(e) => setFilters({ ...filters, orderType: e.target.value as any })}
+                                >
+                                    <option value="">All</option>
+                                    <option value="dine-in">Dine-in</option>
+                                    <option value="takeaway">Takeaway</option>
+                                </select>
+                            </div>
+
+                            {/* Payment Mode */}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', fontWeight: 500 }}>
+                                    Payment Mode
+                                </label>
+                                <select
+                                    className="input"
+                                    value={filters.paymentMode}
+                                    onChange={(e) => setFilters({ ...filters, paymentMode: e.target.value as any })}
+                                >
+                                    <option value="">All</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="upi">UPI</option>
+                                </select>
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', fontWeight: 500 }}>
+                                    Status
+                                </label>
+                                <select
+                                    className="input"
+                                    value={filters.status}
+                                    onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
+                                >
+                                    <option value="">All</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+
+                            {/* Amount Range */}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', fontWeight: 500 }}>
+                                    Min Amount (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={filters.minAmount}
+                                    onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+                                    placeholder="0"
+                                    min="0"
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', fontWeight: 500 }}>
+                                    Max Amount (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={filters.maxAmount}
+                                    onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+                                    placeholder="No limit"
+                                    min="0"
+                                />
+                            </div>
+
+                            {/* Bill Number Search */}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', fontWeight: 500 }}>
+                                    Bill Number
+                                </label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={filters.billNumber}
+                                    onChange={(e) => setFilters({ ...filters, billNumber: e.target.value })}
+                                    placeholder="Search by bill number..."
+                                />
+                            </div>
+                        </div>
+
+                        {/* Filter Actions */}
+                        <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-md)', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={resetFilters}
+                            >
+                                Reset Filters
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={applyFilters}
+                            >
+                                Apply Filters
+                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', color: 'var(--gray-700)' }}>
+                                <strong>{orders.length}</strong> orders found
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {orders.length === 0 ? (

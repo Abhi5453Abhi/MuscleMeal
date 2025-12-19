@@ -20,11 +20,27 @@ export default function POSScreen({ userId }: POSScreenProps) {
     const [showOrderModal, setShowOrderModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [cartRestored, setCartRestored] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showQuickLookup, setShowQuickLookup] = useState(false);
 
     useEffect(() => {
         loadData();
         // Restore cart from localStorage
         restoreCartFromStorage();
+
+        // Keyboard shortcut for quick lookup (Ctrl/Cmd + K)
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                setShowQuickLookup(true);
+            }
+            if (e.key === 'Escape') {
+                setShowQuickLookup(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
     // Restore cart, orderType, and notes from localStorage
@@ -199,9 +215,24 @@ export default function POSScreen({ userId }: POSScreenProps) {
         localStorage.removeItem('musclemeal_orderType');
     };
 
-    const filteredProducts = selectedCategory
-        ? products.filter(p => p.category_id === selectedCategory && p.enabled)
-        : products.filter(p => p.enabled);
+    // Filter products by category and search query
+    const filteredProducts = products.filter(p => {
+        if (!p.enabled) return false;
+        if (selectedCategory && p.category_id !== selectedCategory) return false;
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            return p.name.toLowerCase().includes(query);
+        }
+        return true;
+    });
+
+    // Quick lookup: filter products for quick lookup modal
+    const quickLookupProducts = searchQuery.trim()
+        ? products.filter(p => 
+            p.enabled && 
+            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+          ).slice(0, 10)
+        : [];
 
     if (loading) {
         return (
@@ -445,9 +476,64 @@ export default function POSScreen({ userId }: POSScreenProps) {
                     minHeight: 0,
                     width: '100%'
                 }}>
+                    {/* Search Bar */}
+                    <div style={{ 
+                        flexShrink: 0, 
+                        marginBottom: 'var(--spacing-md)',
+                        position: 'relative'
+                    }}>
+                        <input
+                            type="text"
+                            className="input"
+                            placeholder="🔍 Search products (Ctrl+K for quick lookup)"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onFocus={() => setShowQuickLookup(true)}
+                            style={{
+                                paddingLeft: '2.5rem',
+                                fontSize: '0.938rem'
+                            }}
+                        />
+                        <div style={{
+                            position: 'absolute',
+                            left: 'var(--spacing-md)',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: 'var(--gray-500)',
+                            pointerEvents: 'none'
+                        }}>
+                            🔍
+                        </div>
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                style={{
+                                    position: 'absolute',
+                                    right: 'var(--spacing-md)',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: 'var(--gray-500)',
+                                    fontSize: '1.25rem',
+                                    padding: 'var(--spacing-xs)'
+                                }}
+                            >
+                                ×
+                            </button>
+                        )}
+                    </div>
+
                     {/* Category Tabs */}
                     {categories.length > 0 && (
                         <div className="category-tabs" style={{ flexShrink: 0 }}>
+                            <button
+                                className={`category-tab ${selectedCategory === null ? 'active' : ''}`}
+                                onClick={() => setSelectedCategory(null)}
+                            >
+                                All
+                            </button>
                             {categories.map(category => (
                                 <button
                                     key={category.id}
@@ -501,11 +587,117 @@ export default function POSScreen({ userId }: POSScreenProps) {
                                 padding: 'var(--spacing-xl)',
                                 color: 'var(--gray-700)'
                             }}>
-                                No products available in this category
+                                {searchQuery ? `No products found matching "${searchQuery}"` : 'No products available in this category'}
                             </div>
                         )}
                     </div>
                 </div>
+
+                {/* Quick Lookup Modal */}
+                {showQuickLookup && (
+                    <div 
+                        className="modal-overlay"
+                        onClick={() => setShowQuickLookup(false)}
+                        style={{ zIndex: 2000 }}
+                    >
+                        <div 
+                            className="modal-content" 
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ maxWidth: '600px', width: '90%' }}
+                        >
+                            <div style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                marginBottom: 'var(--spacing-lg)'
+                            }}>
+                                <h2>Quick Product Lookup</h2>
+                                <button
+                                    onClick={() => setShowQuickLookup(false)}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        fontSize: '1.5rem',
+                                        cursor: 'pointer',
+                                        color: 'var(--gray-700)'
+                                    }}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="Type to search products..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                autoFocus
+                                style={{ marginBottom: 'var(--spacing-lg)' }}
+                            />
+
+                            <div style={{ 
+                                maxHeight: '400px', 
+                                overflowY: 'auto',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 'var(--spacing-sm)'
+                            }}>
+                                {quickLookupProducts.length > 0 ? (
+                                    quickLookupProducts.map(product => (
+                                        <div
+                                            key={product.id}
+                                            className="product-card"
+                                            onClick={() => {
+                                                addToCart(product);
+                                                setShowQuickLookup(false);
+                                                setSearchQuery('');
+                                            }}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <h3 style={{ margin: 0, marginBottom: 'var(--spacing-xs)' }}>
+                                                        {product.name}
+                                                    </h3>
+                                                    <div style={{ fontSize: '0.875rem', color: 'var(--gray-600)' }}>
+                                                        {product.category_name}
+                                                    </div>
+                                                </div>
+                                                <div style={{
+                                                    fontSize: '1.25rem',
+                                                    fontWeight: 700,
+                                                    color: 'var(--primary)'
+                                                }}>
+                                                    {formatCurrency(product.price)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div style={{
+                                        textAlign: 'center',
+                                        padding: 'var(--spacing-xl)',
+                                        color: 'var(--gray-700)'
+                                    }}>
+                                        {searchQuery ? `No products found matching "${searchQuery}"` : 'Start typing to search products...'}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{
+                                marginTop: 'var(--spacing-md)',
+                                paddingTop: 'var(--spacing-md)',
+                                borderTop: '1px solid var(--gray-200)',
+                                fontSize: '0.875rem',
+                                color: 'var(--gray-600)',
+                                textAlign: 'center'
+                            }}>
+                                Press Esc to close
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Right Side - Cart (Desktop Only) */}
                 <div className="desktop-only" style={{ 
