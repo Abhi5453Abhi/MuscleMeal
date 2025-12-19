@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 
         const billNumber = generateBillNumber(count || 0);
 
-        // Insert order
+        // Insert order with explicit IST timestamp
         const { data: order, error: orderError } = await supabase
             .from('orders')
             .insert({
@@ -135,7 +135,8 @@ export async function POST(request: NextRequest) {
                 payment_mode,
                 total_amount: total,
                 notes: notes || null,
-                created_by: parseInt(created_by)
+                created_by: parseInt(created_by),
+                created_at: getNowISTISO()
             })
             .select()
             .single();
@@ -207,7 +208,8 @@ export async function POST(request: NextRequest) {
                 previous_stock: currentStock,
                 new_stock: newStock,
                 reference_order_id: orderId,
-                notes: `Order ${billNumber}`
+                notes: `Order ${billNumber}`,
+                created_at: getNowISTISO()
             });
         }
 

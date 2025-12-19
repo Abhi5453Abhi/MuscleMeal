@@ -157,7 +157,8 @@ export async function POST(request: NextRequest) {
                 previous_stock: currentStock,
                 new_stock: newStock,
                 notes: notes || 'Stock purchase',
-                created_by: created_by ? parseInt(created_by) : null
+                created_by: created_by ? parseInt(created_by) : null,
+                created_at: getNowISTISO()
             })
             .select()
             .single();
