@@ -343,7 +343,7 @@ export default function SalesDashboard() {
                                     borderRadius: '8px',
                                     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                                 }}
-                                formatter={(value: number | undefined, name: string) => {
+                                formatter={(value: number | undefined, name: string | undefined) => {
                                     if (value === undefined) return '';
                                     if (name === 'revenue') return formatCurrency(value);
                                     return value;
