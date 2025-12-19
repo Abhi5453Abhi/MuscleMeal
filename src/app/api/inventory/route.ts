@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { InventoryReport, InventoryHistory, InventoryNotification } from '@/types';
+import { getNowISTISO } from '@/lib/utils';
 
 // GET - Get inventory reports
 export async function GET(request: NextRequest) {
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
                 low_stock_threshold: p.low_stock_threshold ?? 10,
                 status: p.stock_quantity === 0 ? 'out_of_stock' : 'low_stock',
                 total_sold: 0, // Will be calculated if needed
-                last_updated: new Date().toISOString()
+                last_updated: getNowISTISO()
             }));
 
             return NextResponse.json(reports);
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
                     low_stock_threshold: threshold,
                     status,
                     total_sold: soldQuantities[p.id] || 0,
-                    last_updated: new Date().toISOString()
+                    last_updated: getNowISTISO()
                 };
             });
 

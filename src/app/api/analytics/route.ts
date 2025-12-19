@@ -1,14 +1,14 @@
 // Analytics API - Advanced reporting and analytics
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
-import { getDayBounds, getWeekBounds, getMonthBounds, getDateRange } from '@/lib/utils';
+import { getDayBounds, getWeekBounds, getMonthBounds, getDateRange, getTodayDate } from '@/lib/utils';
 import { AnalyticsData, SalesTrendData, BestSellingProduct, PeakHourData } from '@/types';
 
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const period = (searchParams.get('period') || 'daily') as 'daily' | 'weekly' | 'monthly';
-        const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
+        const date = searchParams.get('date') || getTodayDate();
 
         let startTimestamp: string;
         let endTimestamp: string;
