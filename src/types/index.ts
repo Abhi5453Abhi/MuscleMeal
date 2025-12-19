@@ -21,6 +21,8 @@ export interface Product {
     category_name?: string;
     price: number;
     enabled: boolean;
+    stock_quantity?: number;
+    low_stock_threshold?: number;
     created_at: string;
 }
 
@@ -77,4 +79,77 @@ export interface LoginResponse {
         role: 'admin' | 'cashier';
     };
     message?: string;
+}
+
+export interface OrderNotification {
+    type: 'order_completed';
+    order: OrderWithItems;
+    timestamp: string;
+    message: string;
+}
+
+export interface SalesTrendData {
+    date: string;
+    revenue: number;
+    orders: number;
+}
+
+export interface BestSellingProduct {
+    product_id: number;
+    product_name: string;
+    total_quantity: number;
+    total_revenue: number;
+    order_count: number;
+}
+
+export interface PeakHourData {
+    hour: number;
+    revenue: number;
+    orders: number;
+}
+
+export interface AnalyticsData {
+    sales_trends: SalesTrendData[];
+    best_selling_products: BestSellingProduct[];
+    peak_hours: PeakHourData[];
+    period: 'daily' | 'weekly' | 'monthly';
+    start_date: string;
+    end_date: string;
+}
+
+export interface InventoryHistory {
+    id: number;
+    product_id: number;
+    change_type: 'purchase' | 'sale' | 'adjustment' | 'initial';
+    quantity_change: number;
+    previous_stock: number;
+    new_stock: number;
+    reference_order_id?: number;
+    notes?: string;
+    created_by?: number;
+    created_at: string;
+}
+
+export interface InventoryNotification {
+    id: number;
+    product_id: number;
+    product_name: string;
+    current_stock: number;
+    threshold: number;
+    notification_type: 'low_stock' | 'out_of_stock';
+    acknowledged: boolean;
+    acknowledged_by?: number;
+    acknowledged_at?: string;
+    created_at: string;
+}
+
+export interface InventoryReport {
+    product_id: number;
+    product_name: string;
+    category_name?: string;
+    current_stock: number;
+    low_stock_threshold: number;
+    status: 'in_stock' | 'low_stock' | 'out_of_stock';
+    total_sold: number;
+    last_updated: string;
 }
