@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
         const maxAmount = searchParams.get('maxAmount');
         const billNumber = searchParams.get('billNumber');
         const status = searchParams.get('status');
+        const customerId = searchParams.get('customerId');
 
         let query = supabase
             .from('orders')
@@ -85,6 +86,10 @@ export async function GET(request: NextRequest) {
             query = query.ilike('bill_number', `%${billNumber}%`);
         }
 
+        if (customerId) {
+            query = query.eq('customer_id', parseInt(customerId));
+        }
+
         const { data: orders, error } = await query;
 
         if (error) {
@@ -103,16 +108,41 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { order_type, payment_mode, items, notes, created_by } = body;
+        const { order_type, payment_mode, items, notes, created_by, customer_id, advance_used } = body;
 
         if (!order_type || !payment_mode || !items || items.length === 0 || !created_by) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
         // Calculate total
-        const total = items.reduce((sum: number, item: any) => {
+        const subtotal = items.reduce((sum: number, item: any) => {
             return sum + (item.price * item.quantity);
         }, 0);
+        
+        // Calculate final total after advance deduction
+        const total = subtotal - (advance_used || 0);
+        
+        // Validate advance_used doesn't exceed subtotal
+        if (advance_used && advance_used > subtotal) {
+            return NextResponse.json({ error: 'Advance used cannot exceed order total' }, { status: 400 });
+        }
+        
+        // If customer_id is provided, validate customer exists and has sufficient advance
+        if (customer_id && advance_used && advance_used > 0) {
+            const { data: customer, error: customerError } = await supabase
+                .from('customers')
+                .select('advance_balance')
+                .eq('id', customer_id)
+                .single();
+            
+            if (customerError || !customer) {
+                return NextResponse.json({ error: 'Customer not found' }, { status: 400 });
+            }
+            
+            if (customer.advance_balance < advance_used) {
+                return NextResponse.json({ error: 'Insufficient advance balance' }, { status: 400 });
+            }
+        }
 
         // Get today's order count for bill number generation
         const today = getTodayDate();
@@ -135,6 +165,8 @@ export async function POST(request: NextRequest) {
                 payment_mode,
                 total_amount: total,
                 notes: notes || null,
+                customer_id: customer_id || null,
+                advance_used: advance_used || 0,
                 created_by: parseInt(created_by),
                 created_at: getNowISTISO()
             })
@@ -211,6 +243,26 @@ export async function POST(request: NextRequest) {
                 notes: `Order ${billNumber}`,
                 created_at: getNowISTISO()
             });
+        }
+
+        // Update customer advance balance if used
+        if (customer_id && advance_used && advance_used > 0) {
+            const { data: customer } = await supabase
+                .from('customers')
+                .select('advance_balance')
+                .eq('id', customer_id)
+                .single();
+            
+            if (customer) {
+                const newBalance = customer.advance_balance - advance_used;
+                await supabase
+                    .from('customers')
+                    .update({ 
+                        advance_balance: newBalance,
+                        updated_at: getNowISTISO()
+                    })
+                    .eq('id', customer_id);
+            }
         }
 
         const orderWithItems: OrderWithItems = {

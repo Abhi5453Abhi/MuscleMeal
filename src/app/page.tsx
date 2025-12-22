@@ -8,7 +8,10 @@ import OrderHistory from '@/components/OrderHistory';
 import ProductManagement from '@/components/ProductManagement';
 import InventoryManagement from '@/components/InventoryManagement';
 import SalesDashboard from '@/components/SalesDashboard';
+import ExpenseManagement from '@/components/ExpenseManagement';
+import ProfitLossDashboard from '@/components/ProfitLossDashboard';
 import NotificationSystem from '@/components/NotificationSystem';
+import CustomerManagement from '@/components/CustomerManagement';
 
 interface User {
     id: number;
@@ -93,9 +96,12 @@ export default function Home() {
 
             {currentView === 'pos' && <POSScreen userId={user.id} />}
             {currentView === 'history' && <OrderHistory />}
+            {currentView === 'customers' && <CustomerManagement />}
             {currentView === 'products' && user.role === 'admin' && <ProductManagement />}
             {currentView === 'inventory' && user.role === 'admin' && <InventoryManagement />}
             {currentView === 'sales' && user.role === 'admin' && <SalesDashboard />}
+            {currentView === 'expenses' && user.role === 'admin' && <ExpenseManagement onViewChange={setCurrentView} />}
+            {currentView === 'profit-loss' && user.role === 'admin' && <ProfitLossDashboard onViewChange={setCurrentView} />}
         </div>
     );
 }

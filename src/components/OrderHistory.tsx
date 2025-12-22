@@ -325,18 +325,36 @@ export default function OrderHistory() {
                                         {order.bill_number}
                                     </div>
                                 </div>
-                                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>
-                                    {formatCurrency(order.total_amount)}
+                                <div style={{ textAlign: 'right' }}>
+                                    {order.advance_used && order.advance_used > 0 ? (
+                                        <>
+                                            <div style={{ fontSize: '0.875rem', color: 'var(--gray-600)', marginBottom: 'var(--spacing-xs)' }}>
+                                                Original: {formatCurrency(order.total_amount + order.advance_used)}
+                                            </div>
+                                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>
+                                                {formatCurrency(order.total_amount)}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>
+                                            {formatCurrency(order.total_amount)}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-md)' }}>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-md)', flexWrap: 'wrap' }}>
                                 <span className={`badge ${order.order_type === 'dine-in' ? 'badge-primary' : 'badge-warning'}`}>
                                     {order.order_type === 'dine-in' ? '🍽️ Dine-in' : '📦 Takeaway'}
                                 </span>
                                 <span className="badge badge-success">
                                     {order.payment_mode === 'cash' ? '💵 Cash' : '📱 UPI'}
                                 </span>
+                                {order.advance_used && order.advance_used > 0 && (
+                                    <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success-dark)' }}>
+                                        💰 Advance Used: {formatCurrency(order.advance_used)}
+                                    </span>
+                                )}
                             </div>
 
                             <div style={{ fontSize: '0.875rem', color: 'var(--gray-700)' }}>
@@ -389,13 +407,37 @@ export default function OrderHistory() {
                             borderRadius: 'var(--radius-md)',
                             marginBottom: 'var(--spacing-lg)'
                         }}>
-                            <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-md)' }}>
+                            {/* Customer Information */}
+                            {(selectedOrder as any).customer && (
+                                <div style={{ 
+                                    marginBottom: 'var(--spacing-md)', 
+                                    paddingBottom: 'var(--spacing-md)',
+                                    borderBottom: '1px solid var(--gray-300)'
+                                }}>
+                                    <div style={{ fontSize: '0.875rem', color: 'var(--gray-600)', marginBottom: 'var(--spacing-xs)' }}>
+                                        Customer Details
+                                    </div>
+                                    <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: 'var(--spacing-xs)' }}>
+                                        👤 {(selectedOrder as any).customer.name}
+                                    </div>
+                                    <div style={{ fontSize: '0.875rem', color: 'var(--gray-700)' }}>
+                                        📱 {(selectedOrder as any).customer.phone_number}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-md)', flexWrap: 'wrap' }}>
                                 <span className={`badge ${selectedOrder.order_type === 'dine-in' ? 'badge-primary' : 'badge-warning'}`}>
                                     {selectedOrder.order_type === 'dine-in' ? '🍽️ Dine-in' : '📦 Takeaway'}
                                 </span>
                                 <span className="badge badge-success">
                                     {selectedOrder.payment_mode === 'cash' ? '💵 Cash' : '📱 UPI'}
                                 </span>
+                                {selectedOrder.advance_used && selectedOrder.advance_used > 0 && (
+                                    <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success-dark)' }}>
+                                        💰 Advance Used: {formatCurrency(selectedOrder.advance_used)}
+                                    </span>
+                                )}
                             </div>
                             <div style={{ fontSize: '0.875rem', color: 'var(--gray-700)' }}>
                                 {formatDateTime(selectedOrder.created_at)}
@@ -443,15 +485,42 @@ export default function OrderHistory() {
 
                         <div style={{
                             paddingTop: 'var(--spacing-lg)',
-                            borderTop: '2px solid var(--gray-200)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
+                            borderTop: '2px solid var(--gray-200)'
                         }}>
-                            <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>Total</span>
-                            <span style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--primary)' }}>
-                                {formatCurrency(selectedOrder.total_amount)}
-                            </span>
+                            {selectedOrder.advance_used && selectedOrder.advance_used > 0 && (
+                                <>
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        marginBottom: 'var(--spacing-sm)',
+                                        fontSize: '1rem'
+                                    }}>
+                                        <span>Subtotal</span>
+                                        <span>{formatCurrency(selectedOrder.total_amount + selectedOrder.advance_used)}</span>
+                                    </div>
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        marginBottom: 'var(--spacing-sm)',
+                                        fontSize: '1rem',
+                                        color: 'var(--success)'
+                                    }}>
+                                        <span>Advance Used</span>
+                                        <span>-{formatCurrency(selectedOrder.advance_used)}</span>
+                                    </div>
+                                </>
+                            )}
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginTop: selectedOrder.advance_used && selectedOrder.advance_used > 0 ? 'var(--spacing-sm)' : 0
+                            }}>
+                                <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>Total</span>
+                                <span style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--primary)' }}>
+                                    {formatCurrency(selectedOrder.total_amount)}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

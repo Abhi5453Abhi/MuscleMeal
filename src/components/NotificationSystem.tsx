@@ -157,31 +157,8 @@ export default function NotificationSystem({ onNewOrder }: NotificationSystemPro
     };
 
     if (notifications.length === 0) {
-        return (
-            <div style={{
-                position: 'fixed',
-                top: 'var(--spacing-md)',
-                right: 'var(--spacing-md)',
-                zIndex: 1000,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--spacing-sm)',
-                padding: 'var(--spacing-sm) var(--spacing-md)',
-                background: (isConnected || isSupabaseConnected) ? 'var(--success)' : 'var(--gray-500)',
-                color: 'white',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.875rem',
-                boxShadow: 'var(--shadow-md)'
-            }}>
-                <span>{(isConnected || isSupabaseConnected) ? '🟢' : '🔴'}</span>
-                <span>
-                    {(isConnected || isSupabaseConnected) ? 'Connected' : 'Disconnected'}
-                    {isConnected && isSupabaseConnected && ' (Both)'}
-                    {isConnected && !isSupabaseConnected && ' (SSE)'}
-                    {!isConnected && isSupabaseConnected && ' (Realtime)'}
-                </span>
-            </div>
-        );
+        // Hide connection status from users - return null when no notifications
+        return null;
     }
 
     return (
@@ -196,44 +173,32 @@ export default function NotificationSystem({ onNewOrder }: NotificationSystemPro
             flexDirection: 'column',
             gap: 'var(--spacing-sm)'
         }}>
-            {/* Connection Status */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 'var(--spacing-sm) var(--spacing-md)',
-                background: (isConnected || isSupabaseConnected) ? 'var(--success)' : 'var(--gray-500)',
-                color: 'white',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.875rem',
-                boxShadow: 'var(--shadow-md)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                    <span>{(isConnected || isSupabaseConnected) ? '🟢' : '🔴'}</span>
-                    <span>
-                        {(isConnected || isSupabaseConnected) ? 'Connected' : 'Disconnected'}
-                        {isConnected && isSupabaseConnected && ' (Both)'}
-                        {isConnected && !isSupabaseConnected && ' (SSE)'}
-                        {!isConnected && isSupabaseConnected && ' (Realtime)'}
-                    </span>
-                </div>
-                {notifications.length > 0 && (
+            {/* Connection Status - Hidden from users */}
+            {/* Notifications Header with Clear All */}
+            {notifications.length > 0 && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    marginBottom: 'var(--spacing-xs)'
+                }}>
                     <button
                         onClick={clearAll}
                         style={{
-                            background: 'rgba(255, 255, 255, 0.2)',
+                            background: 'var(--gray-200)',
                             border: 'none',
-                            color: 'white',
-                            padding: '2px 8px',
+                            color: 'var(--gray-700)',
+                            padding: 'var(--spacing-xs) var(--spacing-sm)',
                             borderRadius: 'var(--radius-sm)',
                             cursor: 'pointer',
-                            fontSize: '0.75rem'
+                            fontSize: '0.75rem',
+                            fontWeight: 500
                         }}
                     >
                         Clear All
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Notifications */}
             {notifications.map((notification, index) => (

@@ -1,7 +1,7 @@
 // Get specific order details
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
-import { Order, OrderWithItems, OrderItem } from '@/types';
+import { Order, OrderWithItems, OrderItem, Customer } from '@/types';
 
 export async function GET(
     request: NextRequest,
@@ -30,9 +30,24 @@ export async function GET(
             return NextResponse.json({ error: 'Failed to fetch order items' }, { status: 500 });
         }
 
-        const orderWithItems: OrderWithItems = {
+        // Fetch customer information if customer_id exists
+        let customer: Customer | null = null;
+        if (order.customer_id) {
+            const { data: customerData, error: customerError } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('id', order.customer_id)
+                .single();
+            
+            if (!customerError && customerData) {
+                customer = customerData as Customer;
+            }
+        }
+
+        const orderWithItems: OrderWithItems & { customer?: Customer | null } = {
             ...order,
-            items: (items || []) as OrderItem[]
+            items: (items || []) as OrderItem[],
+            customer: customer
         };
 
         return NextResponse.json(orderWithItems);

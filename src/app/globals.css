@@ -245,15 +245,16 @@ h3 {
 }
 
 @media (max-width: 768px) {
+
   /* Keep 2 columns for product grid on mobile to fit side-by-side layout */
   .grid-2 {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .grid-3 {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .grid-4 {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -381,6 +382,7 @@ h3 {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -470,28 +472,70 @@ h3 {
     max-height: calc(100vh - 1rem);
     overflow: hidden;
   }
-  
+
   .container {
     min-height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
     padding: var(--spacing-xs);
   }
-  
+
   /* Hide desktop-only elements on mobile */
   .desktop-only {
     display: none !important;
   }
-  
+
   /* Show mobile-only elements on mobile */
   .mobile-only {
     display: block !important;
   }
-  
+
+  .nav-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to bottom, #8b5cf6, #6366f1);
+    flex-direction: column;
+    padding: var(--spacing-md);
+    gap: var(--spacing-sm) !important;
+    display: none !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-left: 0 !important;
+  }
+
+  .nav-menu.is-open {
+    display: flex !important;
+    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-menu .btn {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .nav-menu .logout-btn {
+    margin-left: 0 !important;
+    margin-top: var(--spacing-md);
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .mobile-only.cart-fab {
     display: flex !important;
   }
-  
+
   .mobile-only.order-modal-overlay {
     display: flex !important;
   }
@@ -501,22 +545,22 @@ h3 {
   .container {
     padding: var(--spacing-xs);
   }
-  
+
   .cart-item {
     padding: var(--spacing-md) !important;
     margin-bottom: var(--spacing-sm) !important;
   }
-  
+
   .quantity-btn {
     width: 36px;
     height: 36px;
     font-size: 1.125rem;
   }
-  
+
   .quantity-controls {
     gap: var(--spacing-sm);
   }
-  
+
   /* Floating Action Button styles */
   .cart-fab {
     width: 56px !important;
@@ -526,38 +570,38 @@ h3 {
     font-size: 1.25rem !important;
     animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .cart-fab:hover {
     transform: scale(1.1);
     box-shadow: var(--shadow-2xl);
   }
-  
+
   .cart-fab:active {
     transform: scale(0.95);
   }
-  
+
   /* Full screen modal styles */
   .order-modal-overlay {
     padding: 0 !important;
     animation: fadeIn 0.2s;
   }
-  
-  .order-modal-overlay > div {
+
+  .order-modal-overlay>div {
     border-radius: 0 !important;
     animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .order-modal-overlay .card {
     border-radius: 0 !important;
     padding: var(--spacing-md) !important;
     height: 100% !important;
     max-height: 100% !important;
   }
-  
+
   .order-modal-overlay .mobile-only {
     display: block !important;
   }
-  
+
   .order-modal-overlay button.mobile-only {
     display: flex !important;
   }
@@ -685,39 +729,39 @@ h3 {
   .product-card {
     padding: var(--spacing-sm);
   }
-  
+
   .product-card h3 {
     font-size: 0.875rem;
     margin-bottom: var(--spacing-xs);
   }
-  
+
   .category-tab {
     padding: 0.5rem 1rem;
     font-size: 0.75rem;
   }
-  
-  .pos-layout > div:last-child .card > div:first-child > div > label {
+
+  .pos-layout>div:last-child .card>div:first-child>div>label {
     font-size: 0.813rem;
   }
-  
-  .pos-layout > div:last-child .card > div:first-child > div > div > button {
+
+  .pos-layout>div:last-child .card>div:first-child>div>div>button {
     font-size: 0.75rem;
     padding: var(--spacing-xs) var(--spacing-sm);
   }
-  
-  .pos-layout > div:last-child .card > div:last-child > div:first-child > label {
+
+  .pos-layout>div:last-child .card>div:last-child>div:first-child>label {
     font-size: 0.813rem;
   }
-  
-  .pos-layout > div:last-child .card > div:last-child > div:last-child > div > span:first-child {
+
+  .pos-layout>div:last-child .card>div:last-child>div:last-child>div>span:first-child {
     font-size: 1rem;
   }
-  
-  .pos-layout > div:last-child .card > div:last-child > div:last-child > div > span:last-child {
+
+  .pos-layout>div:last-child .card>div:last-child>div:last-child>div>span:last-child {
     font-size: 1.25rem;
   }
-  
-  .pos-layout > div:last-child .card > div:last-child > div:last-child > button {
+
+  .pos-layout>div:last-child .card>div:last-child>div:last-child>button {
     font-size: 0.875rem;
     padding: var(--spacing-sm) var(--spacing-md);
   }
