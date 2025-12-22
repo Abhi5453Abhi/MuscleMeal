@@ -26,6 +26,15 @@ export interface Product {
     created_at: string;
 }
 
+export interface Customer {
+    id: number;
+    phone_number: string;
+    name: string;
+    advance_balance: number;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface Order {
     id: number;
     bill_number: string;
@@ -34,6 +43,8 @@ export interface Order {
     total_amount: number;
     notes?: string;
     status: 'pending' | 'completed';
+    customer_id?: number;
+    advance_used?: number;
     created_by: number;
     created_at: string;
 }
@@ -152,4 +163,23 @@ export interface InventoryReport {
     status: 'in_stock' | 'low_stock' | 'out_of_stock';
     total_sold: number;
     last_updated: string;
+}
+
+export interface Expense {
+    id: number;
+    description: string;
+    amount: number;
+    category?: string;
+    expense_date: string;
+    notes?: string;
+    created_by: number;
+    created_at: string;
+}
+
+export interface ProfitLossData {
+    period: string;
+    revenue: number;
+    expenses: number;
+    profit: number;
+    profit_percentage: number;
 }
